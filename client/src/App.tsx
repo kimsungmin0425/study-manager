@@ -1,56 +1,54 @@
-import { useState, useEffect } from 'react';
-import { api } from './api';
-import TeacherLogin from './pages/TeacherLogin';
-import TeacherDashboard from './pages/TeacherDashboard';
-import StudentDashboard from './pages/StudentDashboard';
-import InvitePage from './pages/InvitePage';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuthStore } from './hooks/useAuthStore';
+import Sidebar from './components/shared/Sidebar';
+import LoginPage from './pages/LoginPage';
+import StudentHome from './pages/student/StudentHome';
+import StudyRecord from './pages/student/StudyRecord';
+import SleepPage from './pages/student/SleepPage';
+import TodosPage from './pages/student/TodosPage';
+import TeacherHome from './pages/teacher/TeacherHome';
+import GroupsPage from './pages/teacher/GroupsPage';
+import GroupDetail from './pages/teacher/GroupDetail';
+import StudentDashboard from './pages/teacher/StudentDashboard';
+import AnalyticsPage from './pages/teacher/AnalyticsPage';
+import './styles/global.css';
 
-export type AuthState = {
-  loggedIn: boolean;
-  role: 'teacher' | 'student' | null;
-  studentId?: number;
-  name?: string;
-};
-
-export default function App() {
-  const [auth, setAuth] = useState<AuthState>({ loggedIn: false, role: null });
-  const [loading, setLoading] = useState(true);
-
-  const path = window.location.pathname;
-
-  useEffect(() => {
-    api.get('/auth/me').then(setAuth).catch(() => {}).finally(() => setLoading(false));
-  }, []);
-
-  if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 32, marginBottom: 8 }}>📚</div>
-        <p style={{ color: '#64748b' }}>로딩 중...</p>
-      </div>
+function ProtectedLayout({ children, role }: { children: React.ReactNode; role?: string }) {
+  const { user } = useAuthStore();
+  if (!user) return <Navigate to="/login" replace />;
+  if (role && user.role !== role) return <Navigate to={user.role === 'teacher' ? '/teacher' : '/student'} replace />;
+  return (
+    <div className="app-shell">
+      <Sidebar />
+      <main className="main-content">{children}</main>
     </div>
   );
+}
 
-  // 초대 링크 페이지
-  if (path.startsWith('/invite/')) {
-    const token = path.split('/invite/')[1];
-    return <InvitePage token={token} onLogin={setAuth} />;
-  }
+export default function App() {
+  const { user } = useAuthStore();
 
-  // 학생 대시보드
-  if (auth.loggedIn && auth.role === 'student') {
-    return <StudentDashboard auth={auth} onLogout={() => {
-      api.post('/auth/logout', {}).then(() => setAuth({ loggedIn: false, role: null }));
-    }} />;
-  }
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={user ? <Navigate to={user.role === 'teacher' ? '/teacher' : '/student'} /> : <LoginPage />} />
 
-  // 선생님 대시보드
-  if (auth.loggedIn && auth.role === 'teacher') {
-    return <TeacherDashboard onLogout={() => {
-      api.post('/auth/logout', {}).then(() => setAuth({ loggedIn: false, role: null }));
-    }} />;
-  }
+        {/* Student routes */}
+        <Route path="/student" element={<ProtectedLayout role="student"><StudentHome /></ProtectedLayout>} />
+        <Route path="/student/record" element={<ProtectedLayout role="student"><StudyRecord /></ProtectedLayout>} />
+        <Route path="/student/sleep" element={<ProtectedLayout role="student"><SleepPage /></ProtectedLayout>} />
+        <Route path="/student/todos" element={<ProtectedLayout role="student"><TodosPage /></ProtectedLayout>} />
 
-  // 로그인 페이지
-  return <TeacherLogin onLogin={setAuth} />;
+        {/* Teacher routes */}
+        <Route path="/teacher" element={<ProtectedLayout role="teacher"><TeacherHome /></ProtectedLayout>} />
+        <Route path="/teacher/groups" element={<ProtectedLayout role="teacher"><GroupsPage /></ProtectedLayout>} />
+        <Route path="/teacher/groups/:groupId" element={<ProtectedLayout role="teacher"><GroupDetail /></ProtectedLayout>} />
+        <Route path="/teacher/student/:studentId" element={<ProtectedLayout role="teacher"><StudentDashboard /></ProtectedLayout>} />
+        <Route path="/teacher/analytics" element={<ProtectedLayout role="teacher"><AnalyticsPage /></ProtectedLayout>} />
+
+        <Route path="*" element={<Navigate to={user ? (user.role === 'teacher' ? '/teacher' : '/student') : '/login'} />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
