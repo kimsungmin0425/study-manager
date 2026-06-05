@@ -1,67 +1,65 @@
-import { Router, Response } from 'express';
+import { Router, Response, Request } from 'express';
 import { pool } from '../db';
 import { authMiddleware, teacherOnly, AuthRequest } from '../middleware/auth';
-import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 router.use(authMiddleware);
 
-// Create group (teacher only)
-router.post('/', teacherOnly, async (req: AuthRequest, res: Response) => {
-  const { name } = req.body;
+router.post('/', teacherOnly, async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
+  const { name } = authReq.body;
   const invite_code = Math.random().toString(36).substring(2, 8).toUpperCase();
   try {
     const result = await pool.query(
       `INSERT INTO groups (name, teacher_id, invite_code) VALUES ($1,$2,$3) RETURNING *`,
-      [name, req.user!.id, invite_code]
+      [name, authReq.user!.id, invite_code]
     );
     res.json(result.rows[0]);
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
-// Get my groups (teacher)
-router.get('/my', teacherOnly, async (req: AuthRequest, res: Response) => {
+router.get('/my', teacherOnly, async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
     const result = await pool.query(
       `SELECT g.*, COUNT(gm.id)::int as member_count
        FROM groups g LEFT JOIN group_members gm ON g.id=gm.group_id
        WHERE g.teacher_id=$1 GROUP BY g.id ORDER BY g.created_at DESC`,
-      [req.user!.id]
+      [authReq.user!.id]
     );
     res.json(result.rows);
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
-// Join group by invite code (student)
-router.post('/join', async (req: AuthRequest, res: Response) => {
-  const { invite_code } = req.body;
+router.post('/join', async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
+  const { invite_code } = authReq.body;
   try {
     const group = await pool.query(`SELECT * FROM groups WHERE invite_code=$1`, [invite_code]);
     if (!group.rows[0]) return res.status(404).json({ error: '유효하지 않은 초대 코드입니다' });
     await pool.query(
       `INSERT INTO group_members (group_id, student_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`,
-      [group.rows[0].id, req.user!.id]
+      [group.rows[0].id, authReq.user!.id]
     );
     res.json({ success: true, group: group.rows[0] });
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
-// Get group members (teacher)
-router.get('/:groupId/members', teacherOnly, async (req: AuthRequest, res: Response) => {
+router.get('/:groupId/members', teacherOnly, async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
     const result = await pool.query(
       `SELECT u.id, u.name, u.email, gm.joined_at FROM users u
        JOIN group_members gm ON u.id=gm.student_id
        JOIN groups g ON gm.group_id=g.id
        WHERE gm.group_id=$1 AND g.teacher_id=$2`,
-      [req.params.groupId, req.user!.id]
+      [authReq.params['groupId'], authReq.user!.id]
     );
     res.json(result.rows);
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
-// Get student dashboard data (teacher)
-router.get('/student/:studentId/dashboard', teacherOnly, async (req: AuthRequest, res: Response) => {
+router.get('/student/:studentId/dashboard', teacherOnly, async (req: Request, res: Response) => {
   const { studentId } = req.params;
   try {
     const [info, stats, sessions, sleep, todos, monthly, subjectStats] = await Promise.all([
@@ -89,10 +87,10 @@ router.get('/student/:studentId/dashboard', teacherOnly, async (req: AuthRequest
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
-// Delete group
-router.delete('/:id', teacherOnly, async (req: AuthRequest, res: Response) => {
+router.delete('/:id', teacherOnly, async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
   try {
-    await pool.query('DELETE FROM groups WHERE id=$1 AND teacher_id=$2', [req.params.id, req.user!.id]);
+    await pool.query('DELETE FROM groups WHERE id=$1 AND teacher_id=$2', [authReq.params['id'], authReq.user!.id]);
     res.json({ success: true });
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
