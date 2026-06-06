@@ -5,19 +5,22 @@ export interface AuthRequest extends Request {
   user?: { id: string; role: string; name: string; email: string };
 }
 
-export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
+export function authMiddleware(req: Request, res: Response, next: NextFunction): void {
   const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'No token' });
+  if (!token) { res.status(401).json({ error: 'No token' }); return; }
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
-    req.user = decoded;
+    (req as AuthRequest).user = decoded;
     next();
   } catch {
     res.status(401).json({ error: 'Invalid token' });
   }
 }
 
-export function teacherOnly(req: AuthRequest, res: Response, next: NextFunction) {
-  if (req.user?.role !== 'teacher') return res.status(403).json({ error: 'Teacher only' });
+export function teacherOnly(req: Request, res: Response, next: NextFunction): void {
+  if ((req as AuthRequest).user?.role !== 'teacher') {
+    res.status(403).json({ error: 'Teacher only' });
+    return;
+  }
   next();
 }
