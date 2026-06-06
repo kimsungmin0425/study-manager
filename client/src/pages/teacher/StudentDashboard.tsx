@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, Cell } from 'recharts';
 import api from '../../utils/api';
 import { SUBJECT_COLORS, StudySession, SleepRecord, Todo } from '../../types';
 import { formatMinutes, sleepDuration } from '../../utils/helpers';
-import { ArrowLeft, BookOpen, Moon, CheckSquare, TrendingUp, Download } from 'lucide-react';
+import { ArrowLeft, Moon, CheckSquare, FileText } from 'lucide-react';
 
 interface DashboardData {
   info: { id: string; name: string; email: string };
@@ -49,7 +49,6 @@ export default function StudentDashboard() {
     ? Math.round(data.sleep.slice(0,7).reduce((a, r) => a + sleepDuration(r.sleep_time, r.wake_time), 0) / data.sleep.slice(0,7).length / 60 * 10) / 10
     : 0;
 
-  const pendingTodos = data.todos.filter(t => !t.is_completed).length;
   const completedTodos = data.todos.filter(t => t.is_completed).length;
 
   return (
@@ -58,20 +57,25 @@ export default function StudentDashboard() {
         <button onClick={() => navigate(-1)} style={{ background: 'none', border: 'none', display: 'flex', alignItems: 'center', gap: 6, color: 'var(--primary)', fontWeight: 600, fontSize: 14, marginBottom: 12, padding: 0 }}>
           <ArrowLeft size={18} />뒤로
         </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 52, height: 52, borderRadius: 50, background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 800, color: 'var(--primary)' }}>
-            {data.info.name.slice(0,1)}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ width: 52, height: 52, borderRadius: 50, background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 800, color: 'var(--primary)' }}>
+              {data.info.name.slice(0,1)}
+            </div>
+            <div>
+              <h1 style={{ fontSize: 22, fontWeight: 800 }}>{data.info.name}</h1>
+              <p style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>{data.info.email}</p>
+            </div>
           </div>
-          <div>
-            <h1 style={{ fontSize: 22, fontWeight: 800 }}>{data.info.name}</h1>
-            <p style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>{data.info.email}</p>
-          </div>
+          <button onClick={() => navigate(`/teacher/student/${studentId}/report`)} className="btn btn-primary" style={{ flexShrink: 0 }}>
+            <FileText size={16} />
+            월간 리포트
+          </button>
         </div>
       </div>
 
       <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-        {/* Tabs */}
         <div className="tab-bar">
           {(['overview', 'study', 'sleep', 'todos'] as const).map(tab => (
             <button key={tab} className={`tab-item ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)}>
@@ -80,15 +84,13 @@ export default function StudentDashboard() {
           ))}
         </div>
 
-        {/* Overview tab */}
         {activeTab === 'overview' && (
           <>
-            {/* Stats */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
               {[
-                { label: '오늘', value: formatMinutes(Number(data.stats.today)), color: 'var(--primary)', bg: 'var(--primary-light)' },
-                { label: '이번 주', value: formatMinutes(Number(data.stats.week)), color: '#16A34A', bg: '#DCFCE7' },
-                { label: '이번 달', value: formatMinutes(Number(data.stats.month)), color: '#D97706', bg: '#FEF3C7' },
+                { label: '오늘', value: formatMinutes(Number(data.stats.today)), color: 'var(--primary)' },
+                { label: '이번 주', value: formatMinutes(Number(data.stats.week)), color: '#16A34A' },
+                { label: '이번 달', value: formatMinutes(Number(data.stats.month)), color: '#D97706' },
               ].map(s => (
                 <div key={s.label} className="card" style={{ padding: '14px 10px', textAlign: 'center' }}>
                   <p style={{ fontSize: 13, fontWeight: 800, color: s.color }}>{s.value}</p>
@@ -97,7 +99,6 @@ export default function StudentDashboard() {
               ))}
             </div>
 
-            {/* Monthly trend */}
             {monthlyChart.length > 0 && (
               <div className="card">
                 <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 14 }}>월별 공부시간 (시간)</p>
@@ -118,7 +119,6 @@ export default function StudentDashboard() {
               </div>
             )}
 
-            {/* Subject distribution */}
             {data.subjectStats.length > 0 && (
               <div className="card">
                 <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 14 }}>과목 쏠림 분석 (30일)</p>
@@ -134,7 +134,6 @@ export default function StudentDashboard() {
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
-                {/* Imbalance warning */}
                 {data.subjectStats.length >= 2 && (Number(data.subjectStats[0].total) / subjectTotal) > 0.6 && (
                   <div style={{ background: '#FEF3C7', borderRadius: 10, padding: '10px 14px', marginTop: 10 }}>
                     <p style={{ fontSize: 12, color: '#92400E' }}>
@@ -145,7 +144,6 @@ export default function StudentDashboard() {
               </div>
             )}
 
-            {/* Sleep + todo summary */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div className="card" style={{ textAlign: 'center', padding: '20px 12px' }}>
                 <Moon size={24} color="#7C3AED" style={{ margin: '0 auto 8px' }} />
@@ -161,7 +159,6 @@ export default function StudentDashboard() {
           </>
         )}
 
-        {/* Study tab */}
         {activeTab === 'study' && (
           <div className="card">
             <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 14 }}>최근 공부 기록</p>
@@ -188,7 +185,6 @@ export default function StudentDashboard() {
           </div>
         )}
 
-        {/* Sleep tab */}
         {activeTab === 'sleep' && (
           <>
             {data.sleep.length > 0 && (
@@ -237,7 +233,6 @@ export default function StudentDashboard() {
           </>
         )}
 
-        {/* Todos tab */}
         {activeTab === 'todos' && (
           <div className="card">
             <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 14 }}>공부 계획</p>
