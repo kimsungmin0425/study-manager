@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
-import { Group, GroupMember } from '../../types';
-import { BarChart2, Users } from 'lucide-react';
+import { Group } from '../../types';
+import { BarChart2, Users, ChevronRight } from 'lucide-react';
 
 export default function AnalyticsPage() {
   const navigate = useNavigate();
@@ -27,9 +27,9 @@ export default function AnalyticsPage() {
           </div>
         ) : (
           groups.map(group => (
-            <div key={group.id} className="card" onClick={() => navigate(`/teacher/groups/${group.id}`)}
-              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}
-              className="card card-clickable">
+            <div key={group.id} className="card card-clickable"
+              onClick={() => navigate(`/teacher/groups/${group.id}`)}
+              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}>
               <div style={{ width: 48, height: 48, borderRadius: 14, background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 800, color: 'var(--primary)', flexShrink: 0 }}>
                 {group.name.slice(0,1)}
               </div>
@@ -37,7 +37,7 @@ export default function AnalyticsPage() {
                 <p style={{ fontWeight: 700, fontSize: 15 }}>{group.name}</p>
                 <p style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>{group.member_count}명의 학생</p>
               </div>
-              <Users size={18} color="var(--text-tertiary)" />
+              <ChevronRight size={18} color="var(--text-tertiary)" />
             </div>
           ))
         )}

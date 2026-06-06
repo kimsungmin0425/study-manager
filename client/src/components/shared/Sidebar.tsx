@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../hooks/useAuthStore';
+import { useAuthStore } from '../../hooks/useAuthStore';
 import {
   LayoutDashboard, BookOpen, Moon, CheckSquare,
   Users, BarChart2, LogOut, GraduationCap
@@ -28,14 +28,11 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Desktop sidebar */}
       <aside style={{
         position: 'fixed', top: 0, left: 0, bottom: 0, width: 240,
         background: '#fff', borderRight: '1px solid var(--border)',
         display: 'flex', flexDirection: 'column', zIndex: 50,
-        padding: '0',
       }} className="desktop-sidebar">
-        {/* Logo */}
         <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid var(--border-light)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
@@ -46,7 +43,7 @@ export default function Sidebar() {
               <GraduationCap size={20} color="white" />
             </div>
             <div>
-              <div style={{ fontWeight: 800, fontSize: 15, letterSpacing: '-0.3px' }}>StudyFlow</div>
+              <div style={{ fontWeight: 800, fontSize: 15 }}>StudyFlow</div>
               <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
                 {user?.role === 'teacher' ? '선생님' : '학생'}
               </div>
@@ -54,8 +51,7 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {/* Nav */}
-        <nav style={{ flex: 1, padding: '12px 12px' }}>
+        <nav style={{ flex: 1, padding: '12px' }}>
           {nav.map(({ to, label, icon: Icon, exact }) => (
             <NavLink
               key={to}
@@ -77,7 +73,6 @@ export default function Sidebar() {
           ))}
         </nav>
 
-        {/* User + logout */}
         <div style={{ padding: '12px', borderTop: '1px solid var(--border-light)' }}>
           <div style={{ padding: '10px 12px', marginBottom: 4 }}>
             <div style={{ fontSize: 13, fontWeight: 700 }}>{user?.name}</div>
@@ -90,11 +85,10 @@ export default function Sidebar() {
         </div>
       </aside>
 
-      {/* Mobile bottom nav */}
       <nav style={{
         display: 'none', position: 'fixed', bottom: 0, left: 0, right: 0,
         background: '#fff', borderTop: '1px solid var(--border)',
-        zIndex: 50, padding: '8px 0 env(safe-area-inset-bottom)',
+        zIndex: 50, padding: '8px 0',
       }} className="mobile-nav">
         <div style={{ display: 'flex', justifyContent: 'space-around' }}>
           {nav.map(({ to, label, icon: Icon, exact }) => (
