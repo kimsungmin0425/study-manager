@@ -20,7 +20,7 @@
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.5",
-    "@types/node": "^20.11.5",
+    "@types/node": "^20.19.42",
     "@types/pg": "^8.10.9",
     "@types/uuid": "^9.0.7",
     "ts-node-dev": "^2.0.0",
