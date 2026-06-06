@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../hooks/useAuthStore';
+import api from '../utils/api';
 import { GraduationCap, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
@@ -9,6 +10,7 @@ export default function LoginPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const { login, register, loading } = useAuthStore();
@@ -24,6 +26,16 @@ export default function LoginPage() {
         navigate(user.role === 'teacher' ? '/teacher' : '/student');
       } else {
         await register(name, email, password, role);
+        // 학생이고 초대 코드가 있으면 그룹 참가
+        if (role === 'student' && inviteCode.trim()) {
+          try {
+            await api.post('/groups/join', { invite_code: inviteCode.trim().toUpperCase() });
+          } catch (err: any) {
+            setError('가입은 됐지만 초대 코드가 잘못됐어요. 로그인 후 다시 시도해주세요.');
+            setTimeout(() => navigate('/student'), 2000);
+            return;
+          }
+        }
         navigate(role === 'teacher' ? '/teacher' : '/student');
       }
     } catch (err: any) {
@@ -37,7 +49,6 @@ export default function LoginPage() {
       justifyContent: 'center', background: 'var(--bg)', padding: 20,
     }}>
       <div style={{ width: '100%', maxWidth: 400 }}>
-        {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{
             width: 64, height: 64, borderRadius: 18, background: 'var(--primary)',
@@ -53,7 +64,6 @@ export default function LoginPage() {
         </div>
 
         <div className="card" style={{ padding: '28px 24px' }}>
-          {/* Mode toggle */}
           <div className="tab-bar" style={{ marginBottom: 24 }}>
             <button className={`tab-item ${mode === 'login' ? 'active' : ''}`} onClick={() => setMode('login')}>로그인</button>
             <button className={`tab-item ${mode === 'register' ? 'active' : ''}`} onClick={() => setMode('register')}>회원가입</button>
@@ -93,6 +103,23 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
+
+            {mode === 'register' && role === 'student' && (
+              <div>
+                <label className="label">선생님 초대 코드 (선택)</label>
+                <input
+                  className="input"
+                  value={inviteCode}
+                  onChange={e => setInviteCode(e.target.value.toUpperCase())}
+                  placeholder="예: A1B2C3"
+                  style={{ letterSpacing: '2px', fontWeight: 600 }}
+                  maxLength={10}
+                />
+                <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 6 }}>
+                  선생님께 받은 코드를 입력하면 자동으로 그룹에 참가돼요
+                </p>
+              </div>
+            )}
 
             {error && (
               <div style={{ background: '#FEE2E2', color: '#DC2626', padding: '10px 14px', borderRadius: 10, fontSize: 13 }}>
